@@ -23,7 +23,7 @@ Full screen or window and the window size are remembered in `glittervis-settings
 ## Control from MoBetter
 GlitterVis listens on 127.0.0.1:8795 (this PC only): `GET /status`, `GET /cmd/<next|prev|lock|calm|title|quit|show|fullscreen|window|size/small|size/medium|size/large|scene/<name>>`.
 MoBetter's GlitterVis card (shown when config.json has `"glittervis": true`) proxies these. Its Start button runs the Windows
-scheduled task **GlitterVis** (user musicman, interactive), because MoBetter runs in a background session that cannot open a window on the TV.
+scheduled task **GlitterVis** (runs as the signed-in user, interactive), because MoBetter runs in a background session that cannot open a window on the TV.
 Shortcuts: Public desktop and Start menu.
 
 ## Phase 2 (not built)
