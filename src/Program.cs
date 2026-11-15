@@ -162,10 +162,20 @@ public sealed class Vis : GameWindow
 
     void ApplyWindow()
     {
-        if (settings.Fullscreen) { WindowState = WindowState.Fullscreen; CursorState = CursorState.Hidden; return; }
-        WindowState = WindowState.Normal;
-        CursorState = CursorState.Normal;
         var area = Monitors.GetMonitorFromWindow(this).ClientArea;
+        WindowState = WindowState.Normal;
+        if (settings.Fullscreen)
+        {
+            // Borderless window over the whole screen, not exclusive full screen: it never changes the display mode (no HDMI
+            // renegotiation, which can drop a receiver's audio) and it does not minimize when another window takes focus.
+            WindowBorder = WindowBorder.Hidden;
+            Location = area.Min;
+            ClientSize = area.Size;
+            CursorState = CursorState.Hidden;
+            return;
+        }
+        WindowBorder = WindowBorder.Resizable;
+        CursorState = CursorState.Normal;
         double f = settings.Size == "small" ? 0.45 : settings.Size == "large" ? 0.85 : 0.65;
         int w = (int)(area.Size.X * f), h = (int)(w * 9 / 16.0);
         if (h > area.Size.Y * 0.9) { h = (int)(area.Size.Y * 0.9); w = (int)(h * 16 / 9.0); }
@@ -385,6 +395,7 @@ public sealed class Vis : GameWindow
             ClientSize = snap != null ? new Vector2i(960, 540) : new Vector2i(1280, 720),
             WindowState = WindowState.Normal,
             StartVisible = snap == null,
+            AutoIconify = false,
         };
         try
         {

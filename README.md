@@ -28,3 +28,7 @@ Shortcuts: Public desktop and Start menu.
 
 ## Phase 2 (not built)
 - Winamp launcher: a small vis plugin so it shows in Winamp's visualization menu and launches GlitterVis.
+
+## License
+
+GlitterVis is a personal project, shared as-is under the [MIT license](LICENSE). It is **read-only**: pull requests and feature requests are not accepted (see [CONTRIBUTING](CONTRIBUTING.md)). You are free to fork it.
