@@ -43,7 +43,10 @@ public sealed class Vis : GameWindow
     bool locked, calm;
     float calmMix;
     double clock, visTime;
-    int frames; double fpsMark;
+    int frames; double fpsMark, fpsNow;
+    readonly Control control = new();
+    readonly Settings settings;
+    string trackText = "";
 
     float[][] palette = Clone(DefaultPalettes["nebula"]);
     float[][] coverPalette;
@@ -51,8 +54,9 @@ public sealed class Vis : GameWindow
     double lastPoll = -10, titleShownAt = -100;
     int titleW = 1, titleH = 1;
 
-    public Vis(GameWindowSettings g, NativeWindowSettings n, int renderHeight, string snapshot) : base(g, n)
+    public Vis(GameWindowSettings g, NativeWindowSettings n, int renderHeight, string snapshot, Settings s) : base(g, n)
     {
+        settings = s;
         renderH = renderHeight;
         snapshotDir = snapshot;
     }
@@ -78,7 +82,17 @@ public sealed class Vis : GameWindow
         titleTex = GL.GenTexture();
 
         MakeTargets();
-        if (snapshotDir == null) { audio.Start(); CursorState = CursorState.Hidden; }
+        if (snapshotDir == null)
+        {
+            audio.Start();
+            if (!control.Start()) Log.Write("control port busy");
+            control.Status = () => new
+            {
+                app = "GlitterVis", scene = SceneNames[next >= 0 ? next : current], scenes = SceneNames, locked, calm,
+                fullscreen = settings.Fullscreen, size = settings.Size, fps = Math.Round(fpsNow, 1), track = trackText,
+            };
+            ApplyWindow();
+        }
         current = new Random().Next(SceneNames.Length);
         palette = Clone(DefaultPalettes[SceneNames[current]]);
         Log.Write($"started: render {rw}x{rh}, scene {SceneNames[current]}");
@@ -117,6 +131,46 @@ public sealed class Vis : GameWindow
         if (k.IsKeyPressed(Keys.L)) locked = !locked;
         if (k.IsKeyPressed(Keys.C)) calm = !calm;
         if (k.IsKeyPressed(Keys.T)) titleShownAt = clock;
+        if (k.IsKeyPressed(Keys.F) || (k.IsKeyPressed(Keys.Enter) && k.IsKeyDown(Keys.LeftAlt))) Do(settings.Fullscreen ? "window" : "fullscreen");
+        if (k.IsKeyPressed(Keys.D1)) Do("size/small");
+        if (k.IsKeyPressed(Keys.D2)) Do("size/medium");
+        if (k.IsKeyPressed(Keys.D3)) Do("size/large");
+        while (control.Commands.TryDequeue(out var cmd)) Do(cmd);
+    }
+
+    void Do(string cmd)
+    {
+        Log.Write("command: " + cmd);
+        switch (cmd)
+        {
+            case "next": StartFade((current + 1) % SceneNames.Length); break;
+            case "prev": StartFade((current + SceneNames.Length - 1) % SceneNames.Length); break;
+            case "lock": locked = !locked; break;
+            case "calm": calm = !calm; break;
+            case "title": titleShownAt = clock; break;
+            case "quit": Close(); break;
+            case "show": if (WindowState == WindowState.Minimized) ApplyWindow(); Focus(); break;
+            case "fullscreen": settings.Fullscreen = true; settings.Save(); ApplyWindow(); break;
+            case "window": settings.Fullscreen = false; settings.Save(); ApplyWindow(); break;
+            default:
+                if (cmd.StartsWith("size/") && cmd[5..] is "small" or "medium" or "large")
+                { settings.Size = cmd[5..]; settings.Fullscreen = false; settings.Save(); ApplyWindow(); }
+                else if (cmd.StartsWith("scene/") && Array.IndexOf(SceneNames, cmd[6..]) is int i && i >= 0) StartFade(i);
+                break;
+        }
+    }
+
+    void ApplyWindow()
+    {
+        if (settings.Fullscreen) { WindowState = WindowState.Fullscreen; CursorState = CursorState.Hidden; return; }
+        WindowState = WindowState.Normal;
+        CursorState = CursorState.Normal;
+        var area = Monitors.GetMonitorFromWindow(this).ClientArea;
+        double f = settings.Size == "small" ? 0.45 : settings.Size == "large" ? 0.85 : 0.65;
+        int w = (int)(area.Size.X * f), h = (int)(w * 9 / 16.0);
+        if (h > area.Size.Y * 0.9) { h = (int)(area.Size.Y * 0.9); w = (int)(h * 16 / 9.0); }
+        ClientSize = new Vector2i(w, h);
+        Location = new Vector2i(area.Min.X + (area.Size.X - w) / 2, area.Min.Y + (area.Size.Y - h) / 2);
     }
 
     void StartFade(int to)
@@ -135,7 +189,7 @@ public sealed class Vis : GameWindow
         visTime += dt * (1 - calmMix * 0.6);
         audio.Update(dt, clock);
         frames++;
-        if (clock - fpsMark >= 30) { Log.Write($"fps {frames / (clock - fpsMark):F1} at {rw}x{rh}, scene {SceneNames[current]}"); frames = 0; fpsMark = clock; }
+        if (clock - fpsMark >= 30) { fpsNow = frames / (clock - fpsMark); Log.Write($"fps {fpsNow:F1} at {rw}x{rh}, scene {SceneNames[current]}"); frames = 0; fpsMark = clock; }
 
         PollTrack();
         AutoSwitch();
@@ -217,6 +271,7 @@ public sealed class Vis : GameWindow
         string key = t.Artist + "|" + t.Title + "|" + t.File;
         if (key == lastTrackKey) return;
         lastTrackKey = key;
+        trackText = string.IsNullOrWhiteSpace(t.Artist) ? t.Title : t.Artist + " - " + t.Title;
         coverPath = TrackInfo.FindCover(t.File);
         coverPalette = coverPath != null ? Art.Palette(coverPath) : null;
         try
@@ -307,7 +362,7 @@ public sealed class Vis : GameWindow
     const string OverlayFrag = "#version 330 core\nin vec2 vUv; out vec4 o; uniform sampler2D uTex; uniform float uAlpha;\n" +
                                "void main(){ vec4 t = texture(uTex, vUv); o = vec4(t.rgb, t.a * uAlpha); }";
 
-    protected override void OnUnload() { audio.Dispose(); base.OnUnload(); }
+    protected override void OnUnload() { control.Dispose(); audio.Dispose(); base.OnUnload(); }
 
     [STAThread]
     static void Main(string[] args)
@@ -317,6 +372,10 @@ public sealed class Vis : GameWindow
         int hi = Array.IndexOf(args, "--height"); if (hi >= 0 && hi + 1 < args.Length) int.TryParse(args[hi + 1], out h);
         string snap = null;
         int si = Array.IndexOf(args, "--snapshot"); if (si >= 0 && si + 1 < args.Length) snap = args[si + 1];
+        if (snap == null && Control.Send("show")) return;   // already running: bring it forward instead of a second copy
+        var settings = Settings.Load();
+        if (args.Contains("--fullscreen")) settings.Fullscreen = true;
+        if (windowed) settings.Fullscreen = false;
         var gws = new GameWindowSettings { UpdateFrequency = 60 };
         var nws = new NativeWindowSettings
         {
@@ -324,12 +383,12 @@ public sealed class Vis : GameWindow
             APIVersion = new Version(3, 3),
             Profile = ContextProfile.Core,
             ClientSize = snap != null ? new Vector2i(960, 540) : new Vector2i(1280, 720),
-            WindowState = snap != null || windowed ? WindowState.Normal : WindowState.Fullscreen,
+            WindowState = WindowState.Normal,
             StartVisible = snap == null,
         };
         try
         {
-            using var w = new Vis(gws, nws, h, snap);
+            using var w = new Vis(gws, nws, h, snap, settings);
             w.VSync = VSyncMode.On;
             w.Run();
         }

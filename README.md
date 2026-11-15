@@ -7,7 +7,9 @@ about every 40 seconds, and on every new track. Colors come from the album cover
 Scenes: nebula, liquid, aurora, tunnel, galaxy, horizon (mirrored spectrum over water), kaleido.
 
 ## Keys
-N or Right = next scene · Left = previous · L = lock this scene · C = calm mode (slower, softer) · T = show title · Esc or Q = quit
+N or Right = next scene · Left = previous · L = lock this scene · C = calm mode (slower, softer) · T = show title · F or Alt+Enter = full screen / window · 1 / 2 / 3 = small / medium / large window · Esc or Q = quit
+
+Full screen or window and the window size are remembered in `glittervis-settings.json` beside the exe. Only one copy runs: launching it again brings the running one forward.
 
 ## Options
 `--window` (windowed) · `--height 720` (lighter render if the GPU struggles; default 1080) · `--snapshot <folder>` (render every scene to PNG and exit)
@@ -18,6 +20,11 @@ N or Right = next scene · Left = previous · L = lock this scene · C = calm mo
 - MINI: `C:\MediaTools\GlitterVis\` (exe + shaders), shortcut on the Public desktop. Log: `glittervis.log` beside the exe (fps every 30 s).
 - Track info: Winamp window title + IPC for the file path; cover = folder.jpg / cover.jpg / front.jpg / AlbumArt*.jpg / largest jpg in the folder.
 
+## Control from MoBetter
+GlitterVis listens on 127.0.0.1:8795 (this PC only): `GET /status`, `GET /cmd/<next|prev|lock|calm|title|quit|show|fullscreen|window|size/small|size/medium|size/large|scene/<name>>`.
+MoBetter's GlitterVis card (shown when config.json has `"glittervis": true`) proxies these. Its Start button runs the Windows
+scheduled task **GlitterVis** (user musicman, interactive), because MoBetter runs in a background session that cannot open a window on the TV.
+Shortcuts: Public desktop and Start menu.
+
 ## Phase 2 (not built)
 - Winamp launcher: a small vis plugin so it shows in Winamp's visualization menu and launches GlitterVis.
-- MoBetter buttons (start, next, lock, calm) through a local control port.
