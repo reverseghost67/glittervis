@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>GlitterVis</AssemblyName>
+    <RootNamespace>GlitterVis</RootNamespace>
+    <Version>0.1.0</Version>
+    <UseWindowsForms>false</UseWindowsForms>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="OpenTK" Version="4.8.2" />
+    <PackageReference Include="NAudio.Wasapi" Version="2.2.1" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="shaders\*.frag;shaders\*.glsl" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
