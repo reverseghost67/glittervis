@@ -4,6 +4,8 @@ A modern full-screen music visualizer for MINI's TV. It listens to whatever MINI
 via WASAPI loopback), so it needs no Winamp plugin to work. It shows seven GPU scenes and crossfades on a beat
 about every 40 seconds, and on every new track. Colors come from the album cover. A title card fades in for each new track.
 
+Windows 10/11 only (WASAPI audio capture and Winamp track info are Windows features). Needs OpenGL 3.3.
+
 Scenes: nebula, liquid, aurora, tunnel, galaxy, horizon (mirrored spectrum over water), kaleido.
 
 ## Keys
