@@ -160,6 +160,9 @@ public sealed class Vis : GameWindow
         }
     }
 
+    // Full screen stays above the taskbar and pop-ups; a window behaves normally.
+    unsafe void SetOnTop(bool on) => GLFW.SetWindowAttrib(WindowPtr, WindowAttribute.Floating, on);
+
     void ApplyWindow()
     {
         var area = Monitors.GetMonitorFromWindow(this).ClientArea;
@@ -172,8 +175,10 @@ public sealed class Vis : GameWindow
             Location = area.Min;
             ClientSize = area.Size;
             CursorState = CursorState.Hidden;
+            SetOnTop(true);
             return;
         }
+        SetOnTop(false);
         WindowBorder = WindowBorder.Resizable;
         CursorState = CursorState.Normal;
         double f = settings.Size == "small" ? 0.45 : settings.Size == "large" ? 0.85 : 0.65;
